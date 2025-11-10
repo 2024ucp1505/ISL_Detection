@@ -1,0 +1,178 @@
+<script>
+// ====== CONFIG ======
+const BACKEND_URL = "http://127.0.0.1:5000"; // change port if needed
+
+// ====== STATE ======
+let stream = null;
+let isProcessing = false;
+let selectedLanguage = "Hindi";
+let translationCount = 0;
+let sessionStartTime = null;
+let latencies = [];
+
+// ====== ELEMENTS ======
+const videoFeed = document.getElementById('videoFeed');
+const videoOverlay = document.getElementById('videoOverlay');
+const recordingIndicator = document.getElementById('recordingIndicator');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const captureBtn = document.getElementById('captureBtn');
+const islOutput = document.getElementById('islOutput');
+const correctedOutput = document.getElementById('correctedOutput');
+const translationOutput = document.getElementById('translationOutput');
+const confidenceBar = document.getElementById('confidenceBar');
+const speakBtn = document.getElementById('speakBtn');
+const volumeSlider = document.getElementById('volumeSlider');
+const translationCountEl = document.getElementById('translationCount');
+const avgLatencyEl = document.getElementById('avgLatency');
+const accuracyEl = document.getElementById('accuracy');
+const uptimeEl = document.getElementById('uptime');
+
+// ====== HELPERS ======
+const avg = (a)=> a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : 0;
+const fmtMs = (ms)=> `${ms}ms`;
+function showToast(msg, type="success"){
+  // simple inline toast (no DOM in your markup): quick feedback in console + alert on error
+  if(type==="error"){ console.error(msg); } else { console.log(msg); }
+}
+
+async function healthPing(){
+  try{
+    const r = await fetch(`${BACKEND_URL}/health`);
+    const d = await r.json();
+    console.log("Health:", d);
+  }catch(_){ console.warn("Backend offline"); }
+}
+healthPing();
+
+// ====== LANGUAGE BUTTONS ======
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLanguage = btn.dataset.lang;
+    // retranslate current corrected text if present
+    const base = correctedOutput.textContent?.trim();
+    if (base && base !== "-") {
+      try{
+        const tr = await translateNow(base, selectedLanguage);
+        translationOutput.classList.remove('placeholder');
+        translationOutput.textContent = tr;
+      }catch(e){ showToast(e.message || "translate failed", "error"); }
+    }
+  });
+});
+
+// ====== CAMERA ======
+startBtn.addEventListener('click', async ()=>{
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
+    videoFeed.srcObject = stream;
+    videoOverlay.classList.add('hidden');
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    captureBtn.disabled = false;
+    speakBtn.disabled = false;
+    sessionStartTime = Date.now();
+    tickUptime();
+    showToast("Camera started");
+  }catch(e){
+    showToast("Camera permission denied", "error");
+  }
+});
+
+stopBtn.addEventListener('click', ()=>{
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+  stream = null;
+  videoOverlay.classList.remove('hidden');
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  captureBtn.disabled = true;
+});
+
+// ====== SPEECH ======
+speakBtn.addEventListener('click', ()=>{
+  const text = (translationOutput.textContent && translationOutput.textContent !== "-")
+                 ? translationOutput.textContent
+                 : correctedOutput.textContent;
+  if(!text || text === "-") return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.volume = parseInt(volumeSlider.value,10)/100;
+  window.speechSynthesis.speak(u);
+});
+
+// ====== MAIN PIPELINE: capture → predict → autocorrect → translate ======
+captureBtn.addEventListener('click', async ()=>{
+  if(isProcessing || !videoFeed) return;
+  isProcessing = true;
+  recordingIndicator.classList.add('active');
+  const t0 = performance.now();
+  try{
+    // Grab current frame as JPEG base64
+    const canvas = document.createElement('canvas');
+    canvas.width = videoFeed.videoWidth || 640;
+    canvas.height = videoFeed.videoHeight || 360;
+    canvas.getContext('2d').drawImage(videoFeed, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+    // 1) PREDICT
+    const p = await fetch(`${BACKEND_URL}/predict`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ image: dataUrl })
+    }).then(r=>r.json());
+    if(!p.success) throw new Error(p.error || "predict failed");
+
+    islOutput.classList.remove('placeholder');
+    islOutput.textContent = p.prediction || "NO_SIGN_DETECTED";
+    const confPct = Math.round((p.confidence || 0) * 100);
+    confidenceBar.style.width = `${confPct}%`;
+    accuracyEl.textContent = `${confPct}%`;
+
+    // 2) AUTOCORRECT
+    const ac = await fetch(`${BACKEND_URL}/autocorrect`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ text: islOutput.textContent })
+    }).then(r=>r.json());
+    if(!ac.success) throw new Error(ac.error || "autocorrect failed");
+    correctedOutput.classList.remove('placeholder');
+    correctedOutput.textContent = ac.corrected_text || islOutput.textContent;
+
+    // 3) TRANSLATE
+    const tr = await translateNow(correctedOutput.textContent, selectedLanguage);
+    translationOutput.classList.remove('placeholder');
+    translationOutput.textContent = tr;
+
+    // Stats
+    const dt = Math.round(performance.now() - t0);
+    latencies.push(dt);
+    avgLatencyEl.textContent = fmtMs(avg(latencies));
+    translationCount += 1;
+    translationCountEl.textContent = translationCount;
+
+  }catch(e){
+    showToast(e.message || String(e), "error");
+  }finally{
+    isProcessing = false;
+    recordingIndicator.classList.remove('active');
+  }
+});
+
+async function translateNow(text, language){
+  const tr = await fetch(`${BACKEND_URL}/translate`, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ text, language })
+  }).then(r=>r.json());
+  if(!tr.success) throw new Error(tr.error || "translate failed");
+  return tr.translation || text;
+}
+
+// ====== UPTIME TICK ======
+function tickUptime(){
+  if(!sessionStartTime) return;
+  const sec = Math.floor((Date.now() - sessionStartTime)/1000);
+  const m = String(Math.floor(sec/60));
+  const s = String(sec%60).padStart(2, "0");
+  uptimeEl.textContent = `${m}:${s}`;
+  requestAnimationFrame(tickUptime);
+}
+</script>

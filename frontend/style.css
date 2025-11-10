@@ -1,0 +1,57 @@
+/* :root{
+  --primary:#6366f1;--accent:#8b5cf6;--success:#10b981;--danger:#ef4444;
+  --bg:#0a0a1f;--bg2:#1a1a3e;--glass:rgba(255,255,255,.06);--border:rgba(255,255,255,.12);
+  --text:#fff;--muted:#a1a1aa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;color:var(--text);background:linear-gradient(135deg,var(--bg),var(--bg2));min-height:100vh}
+#landing{
+  height:100vh;display:grid;place-items:center;gap:1rem;text-align:center;position:relative;overflow:hidden
+}
+.logo-reveal{
+  font-family:"Space Grotesk",sans-serif;font-size:clamp(3rem,8vw,6rem);font-weight:800;
+  background:linear-gradient(45deg,#fff,#9aa,#fff);background-size:300% 300%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shift 5s ease infinite
+}
+.tagline{color:var(--muted);font-size:1.2rem}
+.cta{margin-top:1.2rem;padding:.9rem 1.4rem;border:0;border-radius:12px;cursor:pointer;font-weight:700;
+  background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff}
+@keyframes shift{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+.topnav{
+  position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;
+  background:rgba(10,10,31,.7);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);z-index:10
+}
+.brand{font-family:"Space Grotesk",sans-serif;font-weight:800}
+.status{display:flex;gap:.6rem;align-items:center;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.2)}}
+#app{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;padding:2rem;max-width:1400px;margin:0 auto}
+.left,.right{background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:1.5rem}
+h2{font-family:"Space Grotesk",sans-serif;margin-bottom:1rem}
+.video-wrap{position:relative;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:#000;aspect-ratio:16/9}
+#videoFeed{width:100%;height:100%;object-fit:cover}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);background:rgba(0,0,0,.6)}
+.record{position:absolute;top:10px;right:10px;background:var(--danger);padding:.4rem .7rem;border-radius:999px;display:none}
+.record.on{display:block}
+.controls{display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap}
+button{padding:.9rem 1rem;border:0;border-radius:12px;font-weight:700;cursor:pointer}
+.primary{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff}
+.secondary{background:var(--glass);border:1px solid var(--border);color:#fff}
+.danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.card{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:16px;padding:1rem;margin-bottom:1rem}
+.label{color:var(--primary);font-weight:700;margin-bottom:.5rem}
+.value{min-height:40px;font-size:1.25rem;line-height:1.6}
+.placeholder{color:var(--muted);font-style:italic}
+.bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin-top:.6rem;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--success),var(--primary));transition:width .4s}
+.langs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.6rem;margin-top:.8rem}
+.lang{padding:.65rem 1rem;border:1px solid var(--border);border-radius:10px;background:var(--glass);color:#fff}
+.lang.active{background:linear-gradient(135deg,var(--primary),var(--accent))}
+.tts{display:flex;gap:1rem;align-items:center;margin-top:1rem}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1rem}
+.stat{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center}
+.stat div{font-family:"Space Grotesk",sans-serif;font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.toast{position:fixed;right:1.2rem;bottom:1.2rem;background:var(--glass);border:1px solid var(--border);padding:1rem 1.2rem;border-radius:12px}
+.hidden{display:none}
+@media (max-width:1100px){#app{grid-template-columns:1fr}} */
